@@ -1,7 +1,11 @@
-[plugin]
-name = "hyprscope"
+[repository]
+name = "hyprScope"
+
+[[plugin]]
+name = "hyprScope"
+description = "Incremental display magnification for Hyprland"
 authors = ["xclusivvv"]
-description = "Screen magnification for Hyprland - magnify your display with incremental control"
-version = "1.0"
-build = "make all"
-output = "hyprscope.so"
+output = "hyprScope.so"
+build = [
+    "make all"
+]
