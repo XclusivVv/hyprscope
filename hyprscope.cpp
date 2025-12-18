@@ -3,6 +3,8 @@
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/config/ConfigManager.hpp>
+#include <cstdlib>
+#include <sstream>
 
 inline HANDLE PHANDLE = nullptr;
 
@@ -16,8 +18,10 @@ SDispatchResult scopeIn(std::string) {
     if (currentZoom > 5.0f)
         currentZoom = 5.0f;
     
-    // Set via hyprctl
-    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor " + std::to_string(currentZoom), "");
+    // Set via system call
+    std::stringstream cmd;
+    cmd << "hyprctl keyword cursor:zoom_factor " << currentZoom;
+    system(cmd.str().c_str());
     
     Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", currentZoom);
     
@@ -38,8 +42,10 @@ SDispatchResult scopeOut(std::string) {
     if (std::abs(currentZoom - 1.0f) < 0.05f)
         currentZoom = 1.0f;
     
-    // Set via hyprctl
-    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor " + std::to_string(currentZoom), "");
+    // Set via system call
+    std::stringstream cmd;
+    cmd << "hyprctl keyword cursor:zoom_factor " << currentZoom;
+    system(cmd.str().c_str());
     
     Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", currentZoom);
     
@@ -47,7 +53,7 @@ SDispatchResult scopeOut(std::string) {
 }
 
 SDispatchResult scopeReset(std::string) {
-    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor 1.0", "");
+    system("hyprctl keyword cursor:zoom_factor 1.0");
     Debug::log(LOG, "[hyprscope] Reset to 1.0");
     return {};
 }
@@ -70,6 +76,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor 1.0", "");
+    system("hyprctl keyword cursor:zoom_factor 1.0");
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
