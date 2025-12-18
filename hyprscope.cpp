@@ -2,73 +2,56 @@
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include <hyprland/src/render/OpenGL.hpp>
-#include <hyprland/src/render/Renderer.hpp>
+#include <hyprland/src/config/ConfigManager.hpp>
 
 inline HANDLE PHANDLE = nullptr;
 
-float g_magnification = 1.0f;
-
-// Hook into render - must set zoom factor DURING rendering, not before
-void onRender(void*, SCallbackInfo&, std::any data) {
-    try {
-        const auto STAGE = std::any_cast<eRenderStage>(data);
-        
-        // RENDER_BEGIN happens in renderMonitor before zoom is applied
-        if (STAGE == eRenderStage(1)) { // 1 = RENDER_BEGIN
-            if (g_pHyprOpenGL && g_pHyprOpenGL->m_renderData.pMonitor) {
-                g_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
-                g_pHyprOpenGL->m_renderData.mouseZoomUseMouse = true;
-            }
-        }
-    } catch (...) {
-        // Ignore
-    }
-}
-
 SDispatchResult scopeIn(std::string) {
-    g_magnification += 0.1f;
-    if (g_magnification > 5.0f) 
-        g_magnification = 5.0f;
+    // Get current zoom factor
+    static auto PCURSORZOOMFACTOR = CConfigValue<Hyprlang::FLOAT>("cursor:zoom_factor");
+    float currentZoom = *PCURSORZOOMFACTOR;
     
-    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", g_magnification * 100);
+    // Increase by 10%
+    currentZoom += 0.1f;
+    if (currentZoom > 5.0f)
+        currentZoom = 5.0f;
     
-    // Damage all monitors to trigger re-render
-    for (auto const& m : g_pCompositor->m_monitors) {
-        g_pHyprRenderer->damageMonitor(m);
-    }
+    // Set the config value
+    g_pConfigManager->setFloat("cursor:zoom_factor", currentZoom);
+    
+    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", currentZoom * 100);
     
     return {};
 }
 
 SDispatchResult scopeOut(std::string) {
-    g_magnification -= 0.1f;
-    if (g_magnification < 0.1f) 
-        g_magnification = 0.1f;
+    // Get current zoom factor
+    static auto PCURSORZOOMFACTOR = CConfigValue<Hyprlang::FLOAT>("cursor:zoom_factor");
+    float currentZoom = *PCURSORZOOMFACTOR;
+    
+    // Decrease by 10%
+    currentZoom -= 0.1f;
+    if (currentZoom < 0.1f)
+        currentZoom = 0.1f;
     
     // Auto-reset to 1.0 if close
-    if (std::abs(g_magnification - 1.0f) < 0.01f) {
-        g_magnification = 1.0f;
+    if (std::abs(currentZoom - 1.0f) < 0.01f) {
+        currentZoom = 1.0f;
     }
     
-    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", g_magnification * 100);
+    // Set the config value
+    g_pConfigManager->setFloat("cursor:zoom_factor", currentZoom);
     
-    // Damage all monitors to trigger re-render
-    for (auto const& m : g_pCompositor->m_monitors) {
-        g_pHyprRenderer->damageMonitor(m);
-    }
+    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", currentZoom * 100);
     
     return {};
 }
 
 SDispatchResult scopeReset(std::string) {
-    g_magnification = 1.0f;
-    Debug::log(LOG, "[hyprscope] Reset to 100%");
+    // Reset to 1.0
+    g_pConfigManager->setFloat("cursor:zoom_factor", 1.0f);
     
-    // Damage all monitors to trigger re-render
-    for (auto const& m : g_pCompositor->m_monitors) {
-        g_pHyprRenderer->damageMonitor(m);
-    }
+    Debug::log(LOG, "[hyprscope] Reset to 100%");
     
     return {};
 }
@@ -80,19 +63,18 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
     
-    // Register render hook
-    static auto renderHook = HyprlandAPI::registerCallbackDynamic(PHANDLE, "render", onRender);
-    
     // Register dispatchers
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopein", scopeIn);
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
     
-    Debug::log(LOG, "[hyprscope] Loaded v1.0 - Display magnification active");
+    Debug::log(LOG, "[hyprscope] Loaded v1.0 - Cursor zoom control");
     
-    return {"hyprscope", "Display magnification", "xclusivvv", "1.0"};
+    return {"hyprscope", "Incremental cursor zoom", "xclusivvv", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
+    // Reset zoom on exit
+    g_pConfigManager->setFloat("cursor:zoom_factor", 1.0f);
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
