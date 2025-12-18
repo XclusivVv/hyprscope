@@ -5,22 +5,33 @@
 
 inline HANDLE PHANDLE = nullptr;
 
-SDispatchResult scopeIn(std::string) {
-    // Just execute a simple command that we KNOW works
-    system("hyprctl keyword cursor:zoom_factor 1.5 2>&1 | logger -t hyprscope");
-    Debug::log(LOG, "[hyprscope] scopein executed");
+SDispatchResult scopeIn(std::string arg) {
+    Debug::log(LOG, "[hyprscope] scopeIn() CALLED with arg: '{}'", arg);
+    
+    int result = system("hyprctl keyword cursor:zoom_factor 1.5");
+    
+    Debug::log(LOG, "[hyprscope] system() returned: {}", result);
+    
     return {};
 }
 
-SDispatchResult scopeOut(std::string) {
-    system("hyprctl keyword cursor:zoom_factor 1.0 2>&1 | logger -t hyprscope");
-    Debug::log(LOG, "[hyprscope] scopeout executed");
+SDispatchResult scopeOut(std::string arg) {
+    Debug::log(LOG, "[hyprscope] scopeOut() CALLED with arg: '{}'", arg);
+    
+    int result = system("hyprctl keyword cursor:zoom_factor 1.0");
+    
+    Debug::log(LOG, "[hyprscope] system() returned: {}", result);
+    
     return {};
 }
 
-SDispatchResult scopeReset(std::string) {
-    system("hyprctl keyword cursor:zoom_factor 1.0 2>&1 | logger -t hyprscope");
-    Debug::log(LOG, "[hyprscope] scopereset executed");
+SDispatchResult scopeReset(std::string arg) {
+    Debug::log(LOG, "[hyprscope] scopeReset() CALLED with arg: '{}'", arg);
+    
+    int result = system("hyprctl keyword cursor:zoom_factor 1.0");
+    
+    Debug::log(LOG, "[hyprscope] system() returned: {}", result);
+    
     return {};
 }
 
@@ -31,15 +42,18 @@ APICALL EXPORT std::string PLUGIN_API_VERSION() {
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     PHANDLE = handle;
     
-    HyprlandAPI::addDispatcherV2(PHANDLE, "scopein", scopeIn);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
-    HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
+    Debug::log(LOG, "[hyprscope] PLUGIN_INIT called, registering dispatchers...");
     
-    Debug::log(LOG, "[hyprscope] Loaded - test version");
+    bool result1 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopein", scopeIn);
+    bool result2 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
+    bool result3 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
     
-    return {"hyprscope", "Test zoom", "xclusivvv", "1.0"};
+    Debug::log(LOG, "[hyprscope] Dispatcher registration results: {} {} {}", result1, result2, result3);
+    Debug::log(LOG, "[hyprscope] Plugin fully loaded");
+    
+    return {"hyprscope", "Debug zoom", "xclusivvv", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    Debug::log(LOG, "[hyprscope] Unloaded");
+    Debug::log(LOG, "[hyprscope] PLUGIN_EXIT called");
 }
