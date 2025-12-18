@@ -1,11 +1,11 @@
 [repository]
-name = "hyprScope"
+name = "hyprscope"
 authors = ["xclusivvv"]
 
-[hyprScope]
+[hyprscope]
 description = "Incremental display magnification for Hyprland"
 authors = ["xclusivvv"]
-output = "hyprScope.so"
+output = "hyprscope.so"
 build = [
     "make all"
 ]
