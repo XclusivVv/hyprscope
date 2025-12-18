@@ -9,17 +9,20 @@ inline HANDLE PHANDLE = nullptr;
 
 float g_magnification = 1.0f;
 
-// Hook into render to apply magnification
+// Hook into render - must set zoom factor DURING rendering, not before
 void onRender(void*, SCallbackInfo&, std::any data) {
     try {
         const auto STAGE = std::any_cast<eRenderStage>(data);
         
-        // Apply before rendering starts (0 = RENDER_PRE)
-        if (STAGE == eRenderStage(0)) {
-            g_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
+        // RENDER_BEGIN happens in renderMonitor before zoom is applied
+        if (STAGE == eRenderStage(1)) { // 1 = RENDER_BEGIN
+            if (g_pHyprOpenGL && g_pHyprOpenGL->m_renderData.pMonitor) {
+                g_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
+                g_pHyprOpenGL->m_renderData.mouseZoomUseMouse = true;
+            }
         }
     } catch (...) {
-        // Ignore casting errors
+        // Ignore
     }
 }
 
@@ -91,7 +94,5 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    // Reset magnification on unload
-    g_pHyprOpenGL->m_renderData.mouseZoomFactor = 1.0f;
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
