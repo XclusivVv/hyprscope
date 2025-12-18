@@ -1,0 +1,7 @@
+[plugin]
+name = "hyprscope"
+authors = ["xclusivvv"]
+description = "Screen magnification for Hyprland - magnify your display with incremental control"
+version = "1.0"
+build = "make all"
+output = "hyprscope.so"
