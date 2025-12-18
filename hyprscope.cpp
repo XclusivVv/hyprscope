@@ -9,7 +9,7 @@ inline HANDLE PHANDLE = nullptr;
 SDispatchResult scopeIn(std::string) {
     // Get current zoom value
     static auto* const PCURSORZOOM = (Hyprlang::CConfigValue*)HyprlandAPI::getConfigValue(PHANDLE, "cursor:zoom_factor");
-    float currentZoom = PCURSORZOOM->floatValue;
+    float currentZoom = std::any_cast<Hyprlang::FLOAT>(PCURSORZOOM->getValue());
     
     // Increase by 0.1
     currentZoom += 0.1f;
@@ -27,7 +27,7 @@ SDispatchResult scopeIn(std::string) {
 SDispatchResult scopeOut(std::string) {
     // Get current zoom value
     static auto* const PCURSORZOOM = (Hyprlang::CConfigValue*)HyprlandAPI::getConfigValue(PHANDLE, "cursor:zoom_factor");
-    float currentZoom = PCURSORZOOM->floatValue;
+    float currentZoom = std::any_cast<Hyprlang::FLOAT>(PCURSORZOOM->getValue());
     
     // Decrease by 0.1
     currentZoom -= 0.1f;
