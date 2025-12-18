@@ -1,64 +1,41 @@
 #define WLR_USE_UNSTABLE
-
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include <fstream>
-#include <ctime>
 
 inline HANDLE PHANDLE = nullptr;
+float g_zoom = 1.0f;
 
-void logToFile(const std::string& msg) {
-    std::ofstream f("/tmp/hyprscope.log", std::ios::app);
-    time_t now = time(0);
-    f << ctime(&now) << " - " << msg << std::endl;
-    f.close();
-}
-
-SDispatchResult scopeIn(std::string arg) {
-    logToFile("scopeIn CALLED!");
-    system("hyprctl keyword cursor:zoom_factor 2.0");
+SDispatchResult scopeIn(std::string) {
+    g_zoom += 0.1f;
+    if (g_zoom > 5.0f) g_zoom = 5.0f;
+    std::string cmd = "hyprctl keyword cursor:zoom_factor " + std::to_string(g_zoom) + " &";
+    system(cmd.c_str());
     return {};
 }
 
-SDispatchResult scopeOut(std::string arg) {
-    logToFile("scopeOut CALLED!");
-    system("hyprctl keyword cursor:zoom_factor 1.0");
+SDispatchResult scopeOut(std::string) {
+    g_zoom -= 0.1f;
+    if (g_zoom < 0.1f) g_zoom = 0.1f;
+    if (std::abs(g_zoom - 1.0f) < 0.05f) g_zoom = 1.0f;
+    std::string cmd = "hyprctl keyword cursor:zoom_factor " + std::to_string(g_zoom) + " &";
+    system(cmd.c_str());
     return {};
 }
 
-SDispatchResult scopeReset(std::string arg) {
-    logToFile("scopeReset CALLED!");
-    system("hyprctl keyword cursor:zoom_factor 1.0");
+SDispatchResult scopeReset(std::string) {
+    g_zoom = 1.0f;
+    system("hyprctl keyword cursor:zoom_factor 1.0 &");
     return {};
 }
 
-APICALL EXPORT std::string PLUGIN_API_VERSION() {
-    logToFile("PLUGIN_API_VERSION called");
-    return HYPRLAND_API_VERSION;
+APICALL EXPORT std::string PLUGIN_API_VERSION() { return HYPRLAND_API_VERSION; }
+
+APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE h) {
+    PHANDLE = h;
+    HyprlandAPI::addDispatcherV2(h, "scopein", scopeIn);
+    HyprlandAPI::addDispatcherV2(h, "scopeout", scopeOut);
+    HyprlandAPI::addDispatcherV2(h, "scopereset", scopeReset);
+    return {"hyprscope", "zoom", "xclusivvv", "1.0"};
 }
 
-APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
-    logToFile("=== PLUGIN_INIT STARTED ===");
-    
-    PHANDLE = handle;
-    
-    logToFile("About to register scopein...");
-    bool r1 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopein", scopeIn);
-    logToFile(r1 ? "scopein registered SUCCESS" : "scopein registered FAIL");
-    
-    logToFile("About to register scopeout...");
-    bool r2 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
-    logToFile(r2 ? "scopeout registered SUCCESS" : "scopeout registered FAIL");
-    
-    logToFile("About to register scopereset...");
-    bool r3 = HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
-    logToFile(r3 ? "scopereset registered SUCCESS" : "scopereset registered FAIL");
-    
-    logToFile("=== PLUGIN_INIT COMPLETED ===");
-    
-    return {"hyprscope", "Init test", "xclusivvv", "1.0"};
-}
-
-APICALL EXPORT void PLUGIN_EXIT() {
-    logToFile("=== PLUGIN_EXIT CALLED ===");
-}
+APICALL EXPORT void PLUGIN_EXIT() {}
