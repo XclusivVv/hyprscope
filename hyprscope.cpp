@@ -2,55 +2,25 @@
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
-#include <hyprland/src/config/ConfigManager.hpp>
 
 inline HANDLE PHANDLE = nullptr;
-float g_zoomLevel = 1.0f;
 
 SDispatchResult scopeIn(std::string) {
-    g_zoomLevel += 0.1f;
-    if (g_zoomLevel > 5.0f)
-        g_zoomLevel = 5.0f;
-    
-    // Get the config value and update it directly
-    auto* configValue = g_pConfigManager->getConfigValuePtr("cursor:zoom_factor");
-    if (configValue) {
-        configValue->setValue(g_zoomLevel);
-    }
-    
-    Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", g_zoomLevel);
-    
+    // Just execute a simple command that we KNOW works
+    system("hyprctl keyword cursor:zoom_factor 1.5 2>&1 | logger -t hyprscope");
+    Debug::log(LOG, "[hyprscope] scopein executed");
     return {};
 }
 
 SDispatchResult scopeOut(std::string) {
-    g_zoomLevel -= 0.1f;
-    if (g_zoomLevel < 0.1f)
-        g_zoomLevel = 0.1f;
-    
-    if (std::abs(g_zoomLevel - 1.0f) < 0.05f)
-        g_zoomLevel = 1.0f;
-    
-    // Get the config value and update it directly
-    auto* configValue = g_pConfigManager->getConfigValuePtr("cursor:zoom_factor");
-    if (configValue) {
-        configValue->setValue(g_zoomLevel);
-    }
-    
-    Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", g_zoomLevel);
-    
+    system("hyprctl keyword cursor:zoom_factor 1.0 2>&1 | logger -t hyprscope");
+    Debug::log(LOG, "[hyprscope] scopeout executed");
     return {};
 }
 
 SDispatchResult scopeReset(std::string) {
-    g_zoomLevel = 1.0f;
-    
-    auto* configValue = g_pConfigManager->getConfigValuePtr("cursor:zoom_factor");
-    if (configValue) {
-        configValue->setValue(1.0f);
-    }
-    
-    Debug::log(LOG, "[hyprscope] Reset to 1.0");
+    system("hyprctl keyword cursor:zoom_factor 1.0 2>&1 | logger -t hyprscope");
+    Debug::log(LOG, "[hyprscope] scopereset executed");
     return {};
 }
 
@@ -65,15 +35,11 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
     
-    Debug::log(LOG, "[hyprscope] Loaded v1.0");
+    Debug::log(LOG, "[hyprscope] Loaded - test version");
     
-    return {"hyprscope", "Incremental cursor zoom", "xclusivvv", "1.0"};
+    return {"hyprscope", "Test zoom", "xclusivvv", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    auto* configValue = g_pConfigManager->getConfigValuePtr("cursor:zoom_factor");
-    if (configValue) {
-        configValue->setValue(1.0f);
-    }
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
