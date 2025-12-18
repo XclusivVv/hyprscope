@@ -2,6 +2,8 @@
 
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
+#include <hyprland/src/render/OpenGL.hpp>
+#include <hyprland/src/render/Renderer.hpp>
 
 inline HANDLE PHANDLE = nullptr;
 
