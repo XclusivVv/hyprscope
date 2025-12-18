@@ -1,0 +1,11 @@
+[repository]
+name = "hyprScope"
+authors = ["xclusivvv"]
+
+[hyprScope]
+description = "Incremental display magnification for Hyprland"
+authors = ["xclusivvv"]
+output = "hyprScope.so"
+build = [
+    "make all"
+]
