@@ -7,52 +7,48 @@
 inline HANDLE PHANDLE = nullptr;
 
 SDispatchResult scopeIn(std::string) {
-    // Get current zoom factor
-    static auto PCURSORZOOMFACTOR = CConfigValue<Hyprlang::FLOAT>("cursor:zoom_factor");
-    float currentZoom = *PCURSORZOOMFACTOR;
+    // Get current zoom value
+    static auto* const PCURSORZOOM = (Hyprlang::CConfigValue*)HyprlandAPI::getConfigValue(PHANDLE, "cursor:zoom_factor");
+    float currentZoom = PCURSORZOOM->floatValue;
     
-    // Increase by 10%
+    // Increase by 0.1
     currentZoom += 0.1f;
     if (currentZoom > 5.0f)
         currentZoom = 5.0f;
     
-    // Set the config value
-    g_pConfigManager->setFloat("cursor:zoom_factor", currentZoom);
+    // Set via hyprctl
+    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor " + std::to_string(currentZoom), "");
     
-    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", currentZoom * 100);
+    Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", currentZoom);
     
     return {};
 }
 
 SDispatchResult scopeOut(std::string) {
-    // Get current zoom factor
-    static auto PCURSORZOOMFACTOR = CConfigValue<Hyprlang::FLOAT>("cursor:zoom_factor");
-    float currentZoom = *PCURSORZOOMFACTOR;
+    // Get current zoom value
+    static auto* const PCURSORZOOM = (Hyprlang::CConfigValue*)HyprlandAPI::getConfigValue(PHANDLE, "cursor:zoom_factor");
+    float currentZoom = PCURSORZOOM->floatValue;
     
-    // Decrease by 10%
+    // Decrease by 0.1
     currentZoom -= 0.1f;
     if (currentZoom < 0.1f)
         currentZoom = 0.1f;
     
-    // Auto-reset to 1.0 if close
-    if (std::abs(currentZoom - 1.0f) < 0.01f) {
+    // Auto-reset near 1.0
+    if (std::abs(currentZoom - 1.0f) < 0.05f)
         currentZoom = 1.0f;
-    }
     
-    // Set the config value
-    g_pConfigManager->setFloat("cursor:zoom_factor", currentZoom);
+    // Set via hyprctl
+    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor " + std::to_string(currentZoom), "");
     
-    Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", currentZoom * 100);
+    Debug::log(LOG, "[hyprscope] Zoom: {:.1f}", currentZoom);
     
     return {};
 }
 
 SDispatchResult scopeReset(std::string) {
-    // Reset to 1.0
-    g_pConfigManager->setFloat("cursor:zoom_factor", 1.0f);
-    
-    Debug::log(LOG, "[hyprscope] Reset to 100%");
-    
+    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor 1.0", "");
+    Debug::log(LOG, "[hyprscope] Reset to 1.0");
     return {};
 }
 
@@ -68,13 +64,12 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopeout", scopeOut);
     HyprlandAPI::addDispatcherV2(PHANDLE, "scopereset", scopeReset);
     
-    Debug::log(LOG, "[hyprscope] Loaded v1.0 - Cursor zoom control");
+    Debug::log(LOG, "[hyprscope] Loaded v1.0");
     
     return {"hyprscope", "Incremental cursor zoom", "xclusivvv", "1.0"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
-    // Reset zoom on exit
-    g_pConfigManager->setFloat("cursor:zoom_factor", 1.0f);
+    HyprlandAPI::invokeHyprctlCommand("keyword", "cursor:zoom_factor 1.0", "");
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
