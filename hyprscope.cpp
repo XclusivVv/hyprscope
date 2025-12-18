@@ -10,12 +10,14 @@ float g_magnification = 1.0f;
 // Hook into render to apply magnification
 void onRender(void*, SCallbackInfo&, std::any data) {
     try {
-        // Access OpenGL through compositor
-        if (g_pCompositor && g_pCompositor->m_pRenderer && g_pCompositor->m_pRenderer->m_pHyprOpenGL) {
-            g_pCompositor->m_pRenderer->m_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
+        const auto STAGE = std::any_cast<eRenderStage>(data);
+        
+        // Apply before rendering starts (0 = RENDER_PRE)
+        if (STAGE == eRenderStage(0)) {
+            g_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
         }
     } catch (...) {
-        // Ignore errors
+        // Ignore casting errors
     }
 }
 
@@ -27,8 +29,8 @@ SDispatchResult scopeIn(std::string) {
     Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", g_magnification * 100);
     
     // Damage all monitors to trigger re-render
-    for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->scheduleFrameForMonitor(m.get());
+    for (auto const& m : g_pCompositor->m_monitors) {
+        g_pHyprRenderer->damageMonitor(m);
     }
     
     return {};
@@ -47,8 +49,8 @@ SDispatchResult scopeOut(std::string) {
     Debug::log(LOG, "[hyprscope] Magnification: {:.0f}%", g_magnification * 100);
     
     // Damage all monitors to trigger re-render
-    for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->scheduleFrameForMonitor(m.get());
+    for (auto const& m : g_pCompositor->m_monitors) {
+        g_pHyprRenderer->damageMonitor(m);
     }
     
     return {};
@@ -59,8 +61,8 @@ SDispatchResult scopeReset(std::string) {
     Debug::log(LOG, "[hyprscope] Reset to 100%");
     
     // Damage all monitors to trigger re-render
-    for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->scheduleFrameForMonitor(m.get());
+    for (auto const& m : g_pCompositor->m_monitors) {
+        g_pHyprRenderer->damageMonitor(m);
     }
     
     return {};
@@ -88,8 +90,6 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
 APICALL EXPORT void PLUGIN_EXIT() {
     // Reset magnification on unload
-    if (g_pCompositor && g_pCompositor->m_pRenderer && g_pCompositor->m_pRenderer->m_pHyprOpenGL) {
-        g_pCompositor->m_pRenderer->m_pHyprOpenGL->m_renderData.mouseZoomFactor = 1.0f;
-    }
+    g_pHyprOpenGL->m_renderData.mouseZoomFactor = 1.0f;
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
