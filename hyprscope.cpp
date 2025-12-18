@@ -10,14 +10,12 @@ float g_magnification = 1.0f;
 // Hook into render to apply magnification
 void onRender(void*, SCallbackInfo&, std::any data) {
     try {
-        const auto STAGE = std::any_cast<eRenderStage>(data);
-        
-        // Apply before rendering starts (0 = RENDER_PRE)
-        if (STAGE == eRenderStage(0)) {
-            g_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
+        // Access OpenGL through compositor
+        if (g_pCompositor && g_pCompositor->m_pRenderer && g_pCompositor->m_pRenderer->m_pHyprOpenGL) {
+            g_pCompositor->m_pRenderer->m_pHyprOpenGL->m_renderData.mouseZoomFactor = g_magnification;
         }
     } catch (...) {
-        // Ignore casting errors
+        // Ignore errors
     }
 }
 
@@ -30,7 +28,7 @@ SDispatchResult scopeIn(std::string) {
     
     // Damage all monitors to trigger re-render
     for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->m_pRenderer->damageMonitor(m.get());
+        g_pCompositor->scheduleFrameForMonitor(m.get());
     }
     
     return {};
@@ -50,7 +48,7 @@ SDispatchResult scopeOut(std::string) {
     
     // Damage all monitors to trigger re-render
     for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->m_pRenderer->damageMonitor(m.get());
+        g_pCompositor->scheduleFrameForMonitor(m.get());
     }
     
     return {};
@@ -62,7 +60,7 @@ SDispatchResult scopeReset(std::string) {
     
     // Damage all monitors to trigger re-render
     for (auto& m : g_pCompositor->m_monitors) {
-        g_pCompositor->m_pRenderer->damageMonitor(m.get());
+        g_pCompositor->scheduleFrameForMonitor(m.get());
     }
     
     return {};
@@ -90,6 +88,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
 APICALL EXPORT void PLUGIN_EXIT() {
     // Reset magnification on unload
-    g_pHyprOpenGL->m_renderData.mouseZoomFactor = 1.0f;
+    if (g_pCompositor && g_pCompositor->m_pRenderer && g_pCompositor->m_pRenderer->m_pHyprOpenGL) {
+        g_pCompositor->m_pRenderer->m_pHyprOpenGL->m_renderData.mouseZoomFactor = 1.0f;
+    }
     Debug::log(LOG, "[hyprscope] Unloaded");
 }
